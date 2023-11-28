@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class EndpointHit {
+public class EndpointHitEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
