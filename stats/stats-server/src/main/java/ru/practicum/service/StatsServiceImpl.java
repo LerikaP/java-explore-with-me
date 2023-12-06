@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
+import ru.practicum.exception.BadRequestException;
 import ru.practicum.mapper.StatsMapper;
 import ru.practicum.model.ViewStatsEntity;
 import ru.practicum.repository.StatsRepository;
@@ -27,6 +28,9 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public List<ViewStatsDto> getStatistics(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
+        if (end.isBefore(start)) {
+            throw new BadRequestException("The end date cannot be earlier than the start date");
+        }
         List<ViewStatsEntity> statistics;
         if (unique) {
             statistics = statsRepository.getStatsByUrisBetweenStartAndEndUniqueIp(start, end, uris);
