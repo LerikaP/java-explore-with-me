@@ -1,4 +1,4 @@
-package ru.practicum.request.model;
+package ru.practicum.participationRequest.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class RequestEntity {
+public class ParticipationRequestEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,5 +28,5 @@ public class RequestEntity {
     @JoinColumn(name = "requester_id")
     private UserEntity requester;
     @Enumerated(EnumType.STRING)
-    private RequestStatus status;
+    private ParticipationRequestStatus status;
 }

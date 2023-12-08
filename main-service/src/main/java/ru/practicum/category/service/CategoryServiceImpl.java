@@ -48,9 +48,10 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto createCategory(NewCategoryDto newCategoryDto) {
         try {
             return categoryMapper.toCategoryDto(categoryRepository.save(categoryMapper.toCategory(newCategoryDto)));
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             throw new UniquenessViolationException(
-                    String.format("Category with name %s already exists", newCategoryDto.getName()));
+                    String.format("DataIntegrityViolationException, category with name %s already exists",
+                            newCategoryDto.getName()));
         }
     }
 

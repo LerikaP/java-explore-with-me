@@ -1,4 +1,4 @@
-package ru.practicum.request.service;
+package ru.practicum.participationRequest.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import lombok.RequiredArgsConstructor;
@@ -9,12 +9,12 @@ import ru.practicum.event.model.EventState;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.request.mapper.RequestMapper;
-import ru.practicum.request.model.QRequestEntity;
-import ru.practicum.request.model.RequestEntity;
-import ru.practicum.request.model.RequestStatus;
-import ru.practicum.request.repository.RequestRepository;
+import ru.practicum.participationRequest.dto.ParticipationRequestDto;
+import ru.practicum.participationRequest.mapper.ParticipationRequestMapper;
+import ru.practicum.participationRequest.model.ParticipationRequestEntity;
+import ru.practicum.participationRequest.model.ParticipationRequestStatus;
+import ru.practicum.participationRequest.model.QParticipationRequestEntity;
+import ru.practicum.participationRequest.repository.ParticipationRequestRepository;
 import ru.practicum.user.model.UserEntity;
 import ru.practicum.user.repository.UserRepository;
 
@@ -25,16 +25,16 @@ import java.util.stream.StreamSupport;
 
 @Service
 @RequiredArgsConstructor
-public class RequestServiceImpl implements RequestService {
-    private final RequestRepository requestRepository;
+public class ParticipationRequestServiceImpl implements ParticipationRequestService {
+    private final ParticipationRequestRepository requestRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final RequestMapper requestMapper;
+    private final ParticipationRequestMapper requestMapper;
 
     @Override
     public List<ParticipationRequestDto> getRequests(long userId) {
         UserEntity user = getUserById(userId);
-        BooleanExpression selectById = QRequestEntity.requestEntity.requester.eq(user);
+        BooleanExpression selectById = QParticipationRequestEntity.participationRequestEntity.requester.eq(user);
         return StreamSupport.stream(requestRepository.findAll(selectById).spliterator(), false)
                 .map(requestMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());
@@ -54,14 +54,15 @@ public class RequestServiceImpl implements RequestService {
         if (event.getParticipantLimit() != 0 && event.getParticipantLimit() - event.getConfirmedRequests() <= 0) {
             throw new ValidationException("The event has reached the limit of requests for participation");
         }
-        BooleanExpression selectByEventId = QRequestEntity.requestEntity.event.id.eq(eventId);
-        BooleanExpression selectBuUserId = QRequestEntity.requestEntity.requester.id.eq(userId);
+        BooleanExpression selectByEventId = QParticipationRequestEntity.participationRequestEntity.event.id.eq(eventId);
+        BooleanExpression selectBuUserId = QParticipationRequestEntity.participationRequestEntity
+                .requester.id.eq(userId);
         if (requestRepository.count(selectByEventId.and(selectBuUserId)) > 0) {
             throw new ValidationException("You cannot send the same request");
         }
-        RequestEntity request = gatherRequest(user, event);
+        ParticipationRequestEntity request = gatherRequest(user, event);
         if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
-            request.setStatus(RequestStatus.CONFIRMED);
+            request.setStatus(ParticipationRequestStatus.CONFIRMED);
             event.setConfirmedRequests(event.getConfirmedRequests() + 1);
             eventRepository.save(event);
         }
@@ -72,8 +73,8 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public ParticipationRequestDto cancelRequest(long userId, long requestId) {
         getUserById(userId);
-        RequestEntity request = getRequestById(requestId);
-        request.setStatus(RequestStatus.CANCELED);
+        ParticipationRequestEntity request = getRequestById(requestId);
+        request.setStatus(ParticipationRequestStatus.CANCELED);
         return requestMapper.toParticipationRequestDto(requestRepository.save(request));
     }
 
@@ -87,17 +88,17 @@ public class RequestServiceImpl implements RequestService {
                 .orElseThrow(() -> new NotFoundException(String.format("Event with id %s was not found", eventId)));
     }
 
-    private RequestEntity getRequestById(long requestId) {
+    private ParticipationRequestEntity getRequestById(long requestId) {
         return requestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException(String.format("Request with id %s was not found", requestId)));
     }
 
-    private RequestEntity gatherRequest(UserEntity user, EventEntity event) {
-        RequestEntity request = new RequestEntity();
+    private ParticipationRequestEntity gatherRequest(UserEntity user, EventEntity event) {
+        ParticipationRequestEntity request = new ParticipationRequestEntity();
         request.setCreated(LocalDateTime.now());
         request.setEvent(event);
         request.setRequester(user);
-        request.setStatus(RequestStatus.PENDING);
+        request.setStatus(ParticipationRequestStatus.PENDING);
         return request;
     }
 }

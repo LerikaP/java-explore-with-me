@@ -10,6 +10,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.participationRequest.dto.ParticipationRequestDto;
+import ru.practicum.participationRequest.model.ParticipationRequestEntity;
+import ru.practicum.participationRequest.model.ParticipationRequestStatus;
 import ru.practicum.util.CustomPageRequest;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsClient;
@@ -27,13 +30,10 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ValidationException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.request.dto.RequestStatusForUpdate;
-import ru.practicum.request.mapper.RequestMapper;
-import ru.practicum.request.model.QRequestEntity;
-import ru.practicum.request.model.RequestEntity;
-import ru.practicum.request.model.RequestStatus;
-import ru.practicum.request.repository.RequestRepository;
+import ru.practicum.participationRequest.dto.RequestStatusForUpdate;
+import ru.practicum.participationRequest.mapper.ParticipationRequestMapper;
+import ru.practicum.participationRequest.model.QParticipationRequestEntity;
+import ru.practicum.participationRequest.repository.ParticipationRequestRepository;
 import ru.practicum.user.model.UserEntity;
 import ru.practicum.user.repository.UserRepository;
 
@@ -48,10 +48,10 @@ import java.util.stream.StreamSupport;
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
-    private final RequestRepository requestRepository;
+    private final ParticipationRequestRepository requestRepository;
     private final CategoryRepository categoryRepository;
     private final EventMapper eventMapper;
-    private final RequestMapper requestMapper;
+    private final ParticipationRequestMapper requestMapper;
     private final LocationMapper locationMapper;
     private final StatsClient statsClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -140,7 +140,7 @@ public class EventServiceImpl implements EventService {
     public List<ParticipationRequestDto> getRequestsForEventByUser(long eventId, long userId) {
         getEventByid(eventId);
         getUserById(userId);
-        BooleanExpression selectById = QRequestEntity.requestEntity.event.id.eq(eventId);
+        BooleanExpression selectById = QParticipationRequestEntity.participationRequestEntity.event.id.eq(eventId);
         return StreamSupport.stream(requestRepository.findAll(selectById).spliterator(), false)
                 .map(requestMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());
@@ -167,37 +167,38 @@ public class EventServiceImpl implements EventService {
             throw new ValidationException("The limit on participation for this event has been reached");
         }
 
-        BooleanExpression selectByIdsRequest = QRequestEntity.requestEntity.id.in(updateDto.getRequestIds());
-        BooleanExpression selectByIdEvent = QRequestEntity.requestEntity.event.id.eq(eventId);
-        List<RequestEntity> requests = StreamSupport
+        BooleanExpression selectByIdsRequest = QParticipationRequestEntity.participationRequestEntity.id
+                .in(updateDto.getRequestIds());
+        BooleanExpression selectByIdEvent = QParticipationRequestEntity.participationRequestEntity.event.id.eq(eventId);
+        List<ParticipationRequestEntity> requests = StreamSupport
                 .stream(requestRepository.findAll(selectByIdsRequest.and(selectByIdEvent)).spliterator(), false)
                 .collect(Collectors.toList());
 
-        List<RequestEntity> listOfConfirmedRequests = new ArrayList<>();
-        List<RequestEntity> listOfRejectedRequests = new ArrayList<>();
+        List<ParticipationRequestEntity> listOfConfirmedRequests = new ArrayList<>();
+        List<ParticipationRequestEntity> listOfRejectedRequests = new ArrayList<>();
 
         if (status.equals(RequestStatusForUpdate.CONFIRMED)) {
-            for (RequestEntity request : requests) {
-                if (!request.getStatus().equals(RequestStatus.PENDING)) {
+            for (ParticipationRequestEntity request : requests) {
+                if (!request.getStatus().equals(ParticipationRequestStatus.PENDING)) {
                     throw new ValidationException("The status can only be changed for requests " +
                             "that are in a pending state");
                 }
                 if (participantLimit - confirmedRequests <= 0) {
-                    request.setStatus(RequestStatus.REJECTED);
+                    request.setStatus(ParticipationRequestStatus.REJECTED);
                     listOfRejectedRequests.add(request);
                 } else {
-                    request.setStatus(RequestStatus.CONFIRMED);
+                    request.setStatus(ParticipationRequestStatus.CONFIRMED);
                     confirmedRequests = confirmedRequests + 1;
                     listOfConfirmedRequests.add(request);
                 }
             }
         } else if (status.equals(RequestStatusForUpdate.REJECTED)) {
-            for (RequestEntity request : requests) {
-                if (!request.getStatus().equals(RequestStatus.PENDING)) {
+            for (ParticipationRequestEntity request : requests) {
+                if (!request.getStatus().equals(ParticipationRequestStatus.PENDING)) {
                     throw new ValidationException("The status can only be changed for requests " +
                             "that are in a pending state");
                 }
-                request.setStatus(RequestStatus.REJECTED);
+                request.setStatus(ParticipationRequestStatus.REJECTED);
                 listOfRejectedRequests.add(request);
             }
         }

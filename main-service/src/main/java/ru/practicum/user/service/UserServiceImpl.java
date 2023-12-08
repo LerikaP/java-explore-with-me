@@ -2,11 +2,11 @@ package ru.practicum.user.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.user.model.UserEntity;
 import ru.practicum.util.CustomPageRequest;
 import ru.practicum.exception.UniquenessViolationException;
 import ru.practicum.exception.NotFoundException;
@@ -28,15 +28,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getUsers(List<Long> ids, int from, int size) {
         PageRequest pageRequest = new CustomPageRequest(from, size, Sort.by(Sort.Direction.ASC, "id"));
+        List<UserEntity> users;
         if (ids != null && !ids.isEmpty()) {
             BooleanExpression selectByIds = QUserEntity.userEntity.id.in(ids);
-            return userRepository.findAll(selectByIds, pageRequest)
-                    .getContent()
-                    .stream()
-                    .map(userMapper::toUserDto)
-                    .collect(Collectors.toList());
+            users = userRepository.findAll(selectByIds, pageRequest).getContent();
+        } else {
+            users = userRepository.findAll(pageRequest).getContent();
         }
-        return userRepository.findAll(pageRequest)
+        return users
                 .stream()
                 .map(userMapper::toUserDto)
                 .collect(Collectors.toList());
@@ -47,9 +46,10 @@ public class UserServiceImpl implements UserService {
     public UserDto createUser(NewUserRequestDto userRequestDto) {
         try {
             return userMapper.toUserDto(userRepository.save(userMapper.toUser(userRequestDto)));
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
             throw new UniquenessViolationException(
-                    String.format("User with email %s already exists", userRequestDto.getEmail()));
+                    String.format("DataIntegrityViolationException, user with email %s already exists",
+                            userRequestDto.getEmail()));
         }
     }
 

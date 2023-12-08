@@ -1,4 +1,4 @@
-package ru.practicum.request.dto;
+package ru.practicum.participationRequest.dto;
 
 public enum RequestStatusForUpdate {
     CONFIRMED,

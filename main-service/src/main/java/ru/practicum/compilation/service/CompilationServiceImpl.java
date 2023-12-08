@@ -33,14 +33,13 @@ public class CompilationServiceImpl implements CompilationService {
     public List<CompilationDto> getCompilations(Boolean pinned, int from, int size) {
         PageRequest pageRequest = new CustomPageRequest(from, size, Sort.by(Sort.Direction.DESC, "id"));
         BooleanExpression selectByPinned = QCompilationEntity.compilationEntity.pinned.eq(pinned);
+        List<CompilationEntity> compilations;
         if (pinned != null) {
-            return compilationRepository.findAll(selectByPinned, pageRequest)
-                    .getContent()
-                    .stream()
-                    .map(compilationMapper::toCompilationDto)
-                    .collect(Collectors.toList());
+            compilations = compilationRepository.findAll(selectByPinned, pageRequest).getContent();
+        } else {
+            compilations = compilationRepository.findAll(pageRequest).getContent();
         }
-        return compilationRepository.findAll(pageRequest)
+        return compilations
                 .stream()
                 .map(compilationMapper::toCompilationDto)
                 .collect(Collectors.toList());
