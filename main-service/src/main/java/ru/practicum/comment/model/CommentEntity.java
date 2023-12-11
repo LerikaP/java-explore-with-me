@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import ru.practicum.event.model.EventEntity;
 import ru.practicum.user.model.UserEntity;
 
@@ -27,6 +28,7 @@ public class CommentEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
     private UserEntity author;
+    @CreationTimestamp
     private LocalDateTime created;
     private Boolean edited;
 }

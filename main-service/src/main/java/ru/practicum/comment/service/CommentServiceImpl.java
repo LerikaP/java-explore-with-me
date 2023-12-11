@@ -38,10 +38,9 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @Override
     public CommentDto createComment(NewCommentDto commentDto, long eventId, long userId) {
-        EventEntity event = getEventByid(eventId);
+        EventEntity event = getEventById(eventId);
         UserEntity user = getUserById(userId);
         CommentEntity comment = commentMapper.toComment(commentDto, user, event);
-        comment.setCreated(LocalDateTime.now());
         comment.setEdited(false);
         return commentMapper.toCommentDto(commentRepository.save(comment));
     }
@@ -67,7 +66,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentDto> getCommentsByUser(long eventId, long userId) {
-        getEventByid(eventId);
+        getEventById(eventId);
         getUserById(userId);
         BooleanExpression selectByIdEvent = QCommentEntity.commentEntity.event.id.eq(eventId);
         BooleanExpression selectByIdUser = QCommentEntity.commentEntity.author.id.eq(userId);
@@ -77,6 +76,7 @@ public class CommentServiceImpl implements CommentService {
         return comments.stream().map(commentMapper::toCommentDto).collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public void deleteCommentByUser(long commentId, long userId) {
         getUserById(userId);
@@ -110,6 +110,7 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public void deleteCommentByAdmin(long commentId) {
         getCommentById(commentId);
@@ -118,7 +119,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentDto> getEventCommentsPublic(long eventId, int from, int size) {
-        getEventByid(eventId);
+        getEventById(eventId);
         BooleanExpression selectByIdEvent = QCommentEntity.commentEntity.event.id.eq(eventId);
         PageRequest pageRequest = new CustomPageRequest(from, size, Sort.by(Sort.Direction.ASC, "id"));
         return commentRepository.findAll(selectByIdEvent, pageRequest)
@@ -128,7 +129,7 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
     }
 
-    private EventEntity getEventByid(long eventId) {
+    private EventEntity getEventById(long eventId) {
         return eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException(String.format("Event with id %s was not found", eventId)));
     }
